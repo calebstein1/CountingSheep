@@ -1,4 +1,5 @@
-﻿using StardewModdingAPI;
+﻿using Microsoft.Xna.Framework;
+using StardewModdingAPI;
 using StardewValley;
 
 namespace CountingSheep;
@@ -31,15 +32,16 @@ internal sealed class ModEntry : Mod
         {
             saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? saveData;
             var hoursSlept = CalculateTimeSlept(saveData.LastBedtime, saveData.AlarmClock);
-            Monitor.Log($"You slept for {hoursSlept} hours", LogLevel.Debug);
             Game1.timeOfDay = saveData.AlarmClock;
             switch (hoursSlept)
             {
-                case < 6:
-                    // TODO: lower stamina and sluggish
+                case < 600:
+                    Monitor.Log("You're really tired", LogLevel.Info);
+                    Game1.player.stamina *= 0.5f;
                     break;
-                case < 8:
-                    // TODO: lower stamina, not sluggish
+                case < 800:
+                    Monitor.Log("You're tired", LogLevel.Info);
+                    Game1.player.stamina *= 0.75f;
                     break;
             }
         };
