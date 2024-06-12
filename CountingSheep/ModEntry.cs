@@ -6,6 +6,7 @@ namespace CountingSheep;
 public sealed class ModData
 {
     public int LastBedtime { get; set; } = 2200;
+    public int AlarmClock { get; set; } = 600;
 }
 
 internal sealed class ModEntry : Mod
@@ -28,7 +29,7 @@ internal sealed class ModEntry : Mod
 
         helper.Events.GameLoop.DayStarted += (sender, e) =>
         {
-            saveData = helper.Data.ReadSaveData<ModData>("LastBedtime") ?? new ModData { LastBedtime = 2200 };
+            saveData = helper.Data.ReadSaveData<ModData>("LastBedtime") ?? new ModData();
             Monitor.Log($"YOu slept for {CalculateTimeSlept(saveData.LastBedtime, 600)} hours", LogLevel.Debug);
         };
     }
