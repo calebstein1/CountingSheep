@@ -10,6 +10,12 @@ public sealed class ModData
 
 internal sealed class ModEntry : Mod
 {
+    private static int CalculateTimeSlept(int bedTime, int awakeTime)
+    {
+        var diff = 2400 - ((bedTime / 100) * 100);
+        return awakeTime + diff;
+    }
+    
     public override void Entry(IModHelper helper)
     {
         var saveData = new ModData();
@@ -23,6 +29,7 @@ internal sealed class ModEntry : Mod
         helper.Events.GameLoop.DayStarted += (sender, e) =>
         {
             saveData = helper.Data.ReadSaveData<ModData>("LastBedtime") ?? new ModData { LastBedtime = 2200 };
+            Monitor.Log($"YOu slept for {CalculateTimeSlept(saveData.LastBedtime, 600)} hours", LogLevel.Debug);
         };
     }
 }
