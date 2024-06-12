@@ -24,13 +24,24 @@ internal sealed class ModEntry : Mod
         helper.Events.GameLoop.DayEnding += (sender, e) =>
         {
             saveData.LastBedtime = Game1.timeOfDay;
-            helper.Data.WriteSaveData("LastBedtime", saveData);
+            helper.Data.WriteSaveData("CountingSheep", saveData);
         };
 
         helper.Events.GameLoop.DayStarted += (sender, e) =>
         {
-            saveData = helper.Data.ReadSaveData<ModData>("LastBedtime") ?? new ModData();
-            Monitor.Log($"YOu slept for {CalculateTimeSlept(saveData.LastBedtime, 600)} hours", LogLevel.Debug);
+            saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? saveData;
+            var hoursSlept = CalculateTimeSlept(saveData.LastBedtime, saveData.AlarmClock);
+            Monitor.Log($"You slept for {hoursSlept} hours", LogLevel.Debug);
+            Game1.timeOfDay = saveData.AlarmClock;
+            switch (hoursSlept)
+            {
+                case < 6:
+                    // TODO: lower stamina and sluggish
+                    break;
+                case < 8:
+                    // TODO: lower stamina, not sluggish
+                    break;
+            }
         };
     }
 }
