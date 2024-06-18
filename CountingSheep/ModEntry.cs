@@ -1,5 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using StardewModdingAPI;
+﻿using StardewModdingAPI;
 using StardewValley;
 
 namespace CountingSheep;
@@ -17,6 +16,11 @@ internal sealed class ModEntry : Mod
         var diff = 2400 - ((bedTime / 100) * 100);
         return awakeTime + diff;
     }
+
+    private static int GetNaturalAwakeTime()
+    {
+        return Game1.timeOfDay - 1600;
+    }
     
     public override void Entry(IModHelper helper)
     {
@@ -25,6 +29,7 @@ internal sealed class ModEntry : Mod
         helper.Events.GameLoop.DayEnding += (sender, e) =>
         {
             saveData.LastBedtime = Game1.timeOfDay;
+            saveData.AlarmClock = GetNaturalAwakeTime();
             helper.Data.WriteSaveData("CountingSheep", saveData);
         };
 
@@ -32,7 +37,7 @@ internal sealed class ModEntry : Mod
         {
             saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? saveData;
             var hoursSlept = CalculateTimeSlept(saveData.LastBedtime, saveData.AlarmClock);
-            Game1.timeOfDay = saveData.AlarmClock;
+            Game1.timeOfDay = Math.Max(600, saveData.AlarmClock);
             switch (hoursSlept)
             {
                 case < 600:
