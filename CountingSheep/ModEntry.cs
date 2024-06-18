@@ -1,5 +1,7 @@
 ﻿using StardewModdingAPI;
 using StardewValley;
+using HarmonyLib;
+using StardewValley.Menus;
 
 namespace CountingSheep;
 
@@ -21,10 +23,24 @@ internal sealed class ModEntry : Mod
     {
         return Game1.timeOfDay - 1600;
     }
+
+    private static bool DoSleepPrefix()
+    {
+        if (Game1.timeOfDay >= 2000) return true;
+        
+        Game1.activeClickableMenu = new DialogueBox("It's too early to go to bed!");
+        return false;
+    }
     
     public override void Entry(IModHelper helper)
     {
+        var harmony = new Harmony(ModManifest.UniqueID);
         var saveData = new ModData();
+
+        harmony.Patch(
+            original: AccessTools.Method(typeof(GameLocation), "startSleep"),
+            prefix: new HarmonyMethod(typeof(ModEntry), nameof(DoSleepPrefix))
+        );
         
         helper.Events.GameLoop.DayEnding += (sender, e) =>
         {
