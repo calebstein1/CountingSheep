@@ -1,4 +1,5 @@
-﻿using StardewModdingAPI;
+﻿using System.Reflection;
+using StardewModdingAPI;
 using StardewValley;
 using HarmonyLib;
 using StardewValley.Menus;
@@ -13,6 +14,8 @@ public sealed class ModData
 
 internal sealed class ModEntry : Mod
 {
+    private static ModData _saveData = new();
+    
     private static int CalculateTimeSlept(int bedTime, int awakeTime)
     {
         var diff = 2400 - ((bedTime / 100) * 100);
@@ -26,20 +29,36 @@ internal sealed class ModEntry : Mod
 
     private static bool DoSleepPrefix()
     {
-        if (Game1.timeOfDay >= 2000) return true;
-        
         if (Game1.IsMultiplayer)
         {
+            return true;
+        }
+        if (Game1.timeOfDay >= 2000)
+        {
+            Game1.activeClickableMenu = new NumberSelectionMenu(
+                message: "When would you like to wake up?",
+                behaviorOnSelection: SetAlarm,
+                minValue: 5,
+                maxValue: 10,
+                defaultNumber: Math.Max(5, GetNaturalAwakeTime() / 100)
+            );
+
+            // TODO: figure out how to block return until dialog is dismissed
             return true;
         }
         Game1.activeClickableMenu = new DialogueBox("It's too early to go to bed!");
         return false;
     }
+
+    private static void SetAlarm(int value, int price, Farmer who)
+    {
+        _saveData.AlarmClock = value * 100;
+        Game1.exitActiveMenu();
+    }
     
     public override void Entry(IModHelper helper)
     {
         var harmony = new Harmony(ModManifest.UniqueID);
-        var saveData = new ModData();
 
         harmony.Patch(
             original: AccessTools.Method(typeof(GameLocation), "startSleep"),
@@ -48,18 +67,17 @@ internal sealed class ModEntry : Mod
         
         helper.Events.GameLoop.DayEnding += (sender, e) =>
         {
-            saveData.LastBedtime = Game1.timeOfDay;
-            saveData.AlarmClock = GetNaturalAwakeTime();
-            helper.Data.WriteSaveData("CountingSheep", saveData);
             if (Game1.IsMultiplayer) return;
+            _saveData.LastBedtime = Game1.timeOfDay;
+            helper.Data.WriteSaveData("CountingSheep", _saveData);
         };
 
         helper.Events.GameLoop.DayStarted += (sender, e) =>
         {
-            saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? saveData;
-            var hoursSlept = CalculateTimeSlept(saveData.LastBedtime, saveData.AlarmClock);
-            Game1.timeOfDay = Math.Max(500, saveData.AlarmClock);
             if (Game1.IsMultiplayer) return;
+            _saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? _saveData;
+            var hoursSlept = CalculateTimeSlept(_saveData.LastBedtime, _saveData.AlarmClock);
+            Game1.timeOfDay = Math.Max(500, _saveData.AlarmClock);
             switch (hoursSlept)
             {
                 case < 600:
