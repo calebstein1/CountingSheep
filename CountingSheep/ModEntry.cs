@@ -28,6 +28,10 @@ internal sealed class ModEntry : Mod
     {
         if (Game1.timeOfDay >= 2000) return true;
         
+        if (Game1.IsMultiplayer)
+        {
+            return true;
+        }
         Game1.activeClickableMenu = new DialogueBox("It's too early to go to bed!");
         return false;
     }
@@ -47,6 +51,7 @@ internal sealed class ModEntry : Mod
             saveData.LastBedtime = Game1.timeOfDay;
             saveData.AlarmClock = GetNaturalAwakeTime();
             helper.Data.WriteSaveData("CountingSheep", saveData);
+            if (Game1.IsMultiplayer) return;
         };
 
         helper.Events.GameLoop.DayStarted += (sender, e) =>
@@ -54,6 +59,7 @@ internal sealed class ModEntry : Mod
             saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? saveData;
             var hoursSlept = CalculateTimeSlept(saveData.LastBedtime, saveData.AlarmClock);
             Game1.timeOfDay = Math.Max(500, saveData.AlarmClock);
+            if (Game1.IsMultiplayer) return;
             switch (hoursSlept)
             {
                 case < 600:
