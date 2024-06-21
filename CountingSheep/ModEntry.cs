@@ -53,7 +53,7 @@ internal sealed class ModEntry : Mod
         {
             saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? saveData;
             var hoursSlept = CalculateTimeSlept(saveData.LastBedtime, saveData.AlarmClock);
-            Game1.timeOfDay = Math.Max(600, saveData.AlarmClock);
+            Game1.timeOfDay = Math.Max(500, saveData.AlarmClock);
             switch (hoursSlept)
             {
                 case < 600:
