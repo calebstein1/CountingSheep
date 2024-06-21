@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using StardewModdingAPI;
+﻿using StardewModdingAPI;
 using StardewValley;
 using HarmonyLib;
 using StardewValley.Menus;
@@ -37,7 +36,11 @@ internal sealed class ModEntry : Mod
         {
             Game1.activeClickableMenu = new NumberSelectionMenu(
                 message: "When would you like to wake up?",
-                behaviorOnSelection: SetAlarm,
+                behaviorOnSelection: (value, price, who) =>
+                {
+                    _saveData.AlarmClock = value;
+                    Game1.exitActiveMenu();
+                },
                 minValue: 5,
                 maxValue: 10,
                 defaultNumber: Math.Max(5, GetNaturalAwakeTime() / 100)
@@ -50,12 +53,6 @@ internal sealed class ModEntry : Mod
         return false;
     }
 
-    private static void SetAlarm(int value, int price, Farmer who)
-    {
-        _saveData.AlarmClock = value * 100;
-        Game1.exitActiveMenu();
-    }
-    
     public override void Entry(IModHelper helper)
     {
         var harmony = new Harmony(ModManifest.UniqueID);
