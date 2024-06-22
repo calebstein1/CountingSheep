@@ -1,10 +1,8 @@
 ﻿using System.Reflection;
 using System.Reflection.Emit;
-using System.Reflection.Metadata.Ecma335;
 using StardewModdingAPI;
 using StardewValley;
 using HarmonyLib;
-using Microsoft.Xna.Framework;
 using StardewValley.Menus;
 
 namespace CountingSheep;
