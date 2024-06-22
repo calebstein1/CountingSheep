@@ -6,5 +6,5 @@
   "UniqueID": "calebstein1.CountingSheep",
   "EntryDLL": "CountingSheep.dll",
   "MinimumApiVersion": "3.0.0",
-  "UpdateKeys": [ "GitHub:calebstein1/CountingSheep" ]
+  "UpdateKeys": [ "GitHub:calebstein1/CountingSheep", "Nexus:25380" ]
 }
