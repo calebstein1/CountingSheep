@@ -88,6 +88,13 @@ internal sealed class ModEntry : Mod
             if (Game1.IsMultiplayer) return;
             _saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? _saveData;
             var hoursSlept = CalculateTimeSlept(_saveData.LastBedtime, _saveData.AlarmClock);
+            if (_saveData.LastBedtime == 2600)
+            {
+                Monitor.Log("You're really tired", LogLevel.Info);
+                Game1.timeOfDay = 1100;
+                Game1.player.stamina *= 0.5f;
+                return;
+            }
             Game1.timeOfDay = Math.Max(500, _saveData.AlarmClock);
             switch (hoursSlept)
             {
