@@ -1,6 +1,10 @@
-﻿using StardewModdingAPI;
+﻿using System.Reflection;
+using System.Reflection.Emit;
+using System.Reflection.Metadata.Ecma335;
+using StardewModdingAPI;
 using StardewValley;
 using HarmonyLib;
+using Microsoft.Xna.Framework;
 using StardewValley.Menus;
 
 namespace CountingSheep;
@@ -14,10 +18,11 @@ public sealed class ModData
 internal sealed class ModEntry : Mod
 {
     private static ModData _saveData = new();
-    
+    private static MethodInfo? _sleepFunc;
+
     private static int CalculateTimeSlept(int bedTime, int awakeTime)
     {
-        var diff = 2400 - ((bedTime / 100) * 100);
+        var diff = 2400 - bedTime / 100 * 100;
         return awakeTime + diff;
     }
 
@@ -26,31 +31,42 @@ internal sealed class ModEntry : Mod
         return Game1.timeOfDay - 1600;
     }
 
-    private static bool DoSleepPrefix()
+    public static void SetAlarm()
     {
-        if (Game1.IsMultiplayer)
+        if (Game1.IsMultiplayer) return;
+        if (Game1.timeOfDay < 2000)
         {
-            return true;
+            Game1.activeClickableMenu = new DialogueBox("It's too early to go to bed!");
+            return;
         }
-        if (Game1.timeOfDay >= 2000)
-        {
-            Game1.activeClickableMenu = new NumberSelectionMenu(
-                message: "When would you like to wake up?",
-                behaviorOnSelection: (value, price, who) =>
-                {
-                    _saveData.AlarmClock = value;
-                    Game1.exitActiveMenu();
-                },
-                minValue: 5,
-                maxValue: 10,
-                defaultNumber: Math.Max(5, GetNaturalAwakeTime() / 100)
-            );
+        Game1.activeClickableMenu = new NumberSelectionMenu(
+            message: "When would you like to wake up?",
+            behaviorOnSelection: (value, price, who) =>
+            {
+                _saveData.AlarmClock = value * 100;
+                Game1.exitActiveMenu();
+                _sleepFunc?.Invoke(new GameLocation(), null);
+            },
+            minValue: 5,
+            maxValue: 10,
+            defaultNumber: Math.Max(5, GetNaturalAwakeTime() / 100)
+        );
+    }
 
-            // TODO: figure out how to block return until dialog is dismissed
-            return true;
+    private static IEnumerable<CodeInstruction> AnswerDialogueActionTranspiler(
+        IEnumerable<CodeInstruction> instructions)
+    {
+        var codes = instructions.ToList();
+        
+        for (var i = 0; i < codes.Count; i++)
+        {
+            if (!(codes[i].opcode == OpCodes.Call && (codes[i].operand as MethodInfo).Name.Contains("startSleep"))) continue;
+            _sleepFunc = codes[i].operand as MethodInfo;
+            codes.Insert(i++, CodeInstruction.Call(typeof(ModEntry), nameof(SetAlarm)));
+            codes.Insert(i++, new CodeInstruction(OpCodes.Ret));
         }
-        Game1.activeClickableMenu = new DialogueBox("It's too early to go to bed!");
-        return false;
+
+        return codes.AsEnumerable();
     }
 
     public override void Entry(IModHelper helper)
@@ -58,10 +74,10 @@ internal sealed class ModEntry : Mod
         var harmony = new Harmony(ModManifest.UniqueID);
 
         harmony.Patch(
-            original: AccessTools.Method(typeof(GameLocation), "startSleep"),
-            prefix: new HarmonyMethod(typeof(ModEntry), nameof(DoSleepPrefix))
+            original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.answerDialogueAction)),
+            transpiler: new HarmonyMethod(typeof(ModEntry), nameof(AnswerDialogueActionTranspiler))
         );
-        
+
         helper.Events.GameLoop.DayEnding += (sender, e) =>
         {
             if (Game1.IsMultiplayer) return;
