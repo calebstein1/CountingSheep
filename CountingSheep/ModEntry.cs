@@ -29,6 +29,11 @@ internal sealed class ModEntry : Mod
         return Game1.timeOfDay - 1600;
     }
 
+    private static void AdvanceGameTime(int time)
+    {
+        while (Game1.timeOfDay < time) Game1.performTenMinuteClockUpdate();
+    }
+
     public static void SetAlarm()
     {
         if (Game1.IsMultiplayer) return;
@@ -91,11 +96,14 @@ internal sealed class ModEntry : Mod
             if (_saveData.LastBedtime == 2600)
             {
                 Monitor.Log("You're really tired", LogLevel.Info);
-                Game1.timeOfDay = 1100;
+                AdvanceGameTime(1100);
                 Game1.player.stamina *= 0.5f;
                 return;
             }
-            Game1.timeOfDay = Math.Max(500, _saveData.AlarmClock);
+
+            if (_saveData.AlarmClock == 500) Game1.timeOfDay = 500;
+            else AdvanceGameTime(_saveData.AlarmClock);
+            
             switch (hoursSlept)
             {
                 case < 600:
