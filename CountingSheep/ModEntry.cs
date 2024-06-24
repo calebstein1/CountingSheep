@@ -36,8 +36,12 @@ internal sealed class ModEntry : Mod
 
     public static void SetAlarm()
     {
-        if (Game1.IsMultiplayer) return;
-        if (Game1.timeOfDay < 2000)
+        if (!Game1.IsMasterGame)
+        {
+            _sleepFunc?.Invoke(new GameLocation(), null);
+            return;
+        }
+        if (!Game1.IsMultiplayer && Game1.timeOfDay < 2000)
         {
             Game1.activeClickableMenu = new DialogueBox("It's too early to go to bed!");
             return;
@@ -83,17 +87,17 @@ internal sealed class ModEntry : Mod
 
         helper.Events.GameLoop.DayEnding += (sender, e) =>
         {
-            if (Game1.IsMultiplayer) return;
+            if (!Game1.IsMasterGame) return;
             _saveData.LastBedtime = Game1.timeOfDay;
             helper.Data.WriteSaveData("CountingSheep", _saveData);
         };
 
         helper.Events.GameLoop.DayStarted += (sender, e) =>
         {
-            if (Game1.IsMultiplayer) return;
+            if (!Game1.IsMasterGame) return;
             _saveData = helper.Data.ReadSaveData<ModData>("CountingSheep") ?? _saveData;
             var hoursSlept = CalculateTimeSlept(_saveData.LastBedtime, _saveData.AlarmClock);
-            if (_saveData.LastBedtime == 2600)
+            if (!Game1.IsMultiplayer && _saveData.LastBedtime == 2600)
             {
                 Monitor.Log("You're really tired", LogLevel.Info);
                 AdvanceGameTime(1100);
@@ -103,7 +107,8 @@ internal sealed class ModEntry : Mod
 
             if (_saveData.AlarmClock == 500) Game1.timeOfDay = 500;
             else AdvanceGameTime(_saveData.AlarmClock);
-            
+
+            if (Game1.IsMultiplayer) return;
             switch (hoursSlept)
             {
                 case < 600:
